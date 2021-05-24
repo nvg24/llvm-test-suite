@@ -29,7 +29,8 @@ def parse(context, filename):
     # Note that we keep both "RUN" and "RUN:" in the list to stay compatible
     # with older lit versions.
     keywords = ['PREPARE:', 'PREPARE', 'RUN:', 'RUN', 'VERIFY:', 'VERIFY',
-                'METRIC:', 'METRIC']
+                'METRIC:', 'METRIC',  'NUM_THREADS:', 'NUM_THREADS', 'OPENMP:',
+                'OPENMP']
     for line_number, command_type, ln in \
             parseIntegratedTestScriptCommands(filename, keywords):
         if command_type.startswith('PREPARE'):
@@ -42,6 +43,20 @@ def parse(context, filename):
             metric, ln = ln.split(':', 1)
             metricscript = metricscripts.setdefault(metric.strip(), list())
             _parseShellCommand(metricscript, ln)
+        elif command_type.startswith("NUM_THREADS"):
+            ln = ln.split()
+            if len(ln) > 1:
+                raise ValueError("Use 'NUM_THREADS: integer' in the "+
+                                 ".test file: ", filename)
+            context.test.num_threads = int(ln[0])
+
+            if context.litConfig.num_threads > 1:
+                context.test.num_threads = context.litConfig.num_threads
+        elif command_type.startswith("OPENMP"):
+            ln = ln.split()
+            if(ln[1] == "TRUE"):
+                context.test.omp_test = True
+
         else:
             raise ValueError("unknown script command type: %r" % (
                              command_type,))
